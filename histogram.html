@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+    <title>Education level histogram</title>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<style>
+    /* style information for navigation bar */
+    .navi-flex-container ul{
+        flex-wrap:wrap;
+        list-style:none;
+        display:flex;
+        height:0.8em;
+        justify-content: center;
+        position: relative;
+    }
+
+    li {
+        display:inline;
+        align-items: center;
+    }
+
+    li a {
+        font-family:Baskerville, "Palatino Linotype", Palatino, "Century Schoolbook L", "Times New Roman", "serif";
+        background-color:gainsboro;
+        display:block;
+        text-align:center;
+        padding:0.5em;
+        color:darkred;
+        text-decoration:none;
+        width:12em;
+    }
+    .ul w3-bar{
+        font-family:Baskerville, "Palatino Linotype", Palatino, "Century Schoolbook L", "Times New Roman", "serif";
+        background-color:gainsboro;
+        display:block;
+        text-align:center;
+        padding:0.5em;
+        color:darkred;
+        text-decoration:none;
+    }
+
+    /* style of the title */
+    h2 {
+        font-family: "Adobe Gothic Std";
+        text-align: center;
+        color: darkred;
+        font-size: 1.7em;
+        height: 0.8em;
+    }
+
+    h5 {
+        color: slategray;
+        height:1.5em;
+    }
+
+    /* Style information for axis lines */
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+
+    .text-label text {
+        fill: red;
+        font: 10px sans-serif;
+    }
+
+</style>
+
+<body>
+
+<nav class="navi-flex-container">
+    <ul class="w3-bar">
+        <li><a href="pie chart 2.html" class="w3-bar-item w3-button w3-hide-small">General pie chart</a></li>
+        <li><a href="scatter plot.html" class="w3-bar-item w3-button w3-hide-small">
+            Salary scatter plot</a></li>
+        <li><a href="histogram.html" class="w3-bar-item w3-button w3-hide-small">Education level histogram</a></li>
+        <li><a href="list of occupations.html" class="w3-bar-item w3-button w3-hide-small">List of occupations</a></li>
+
+    </ul>
+</nav>
+
+<h2>Education level of detailed occupations</h2>
+<!--
+Select control to set the major occupation types to be visualized.  Note that the JavaScript
+callback named "renderVis(...)"" is triggered each time the value for this select
+control changes.
+-->
+
+
+<div id="firstDropdown">
+    <p style="position: relative; left: 2%">Select a major occupation type:
+        <select onchange="renderVis(this.options[this.selectedIndex].value);"></select></p>
+</div>
+    <!--https://www.willmaster.com/library/web-development/dropdown-updates-another-dropdown.php-->
+<div id="secondDropdown">
+    <p style="position: relative; left: 2%">Select a detailed occupation:
+        <select id="secondMenu" onchange="renderVis2(this.options[this.selectedIndex].value);"></select></p>
+</div>
+
+<span id="details" style="position: absolute; left:45%; top:25%; font-family:'Nanum Gothic';"></span>
+
+<script>
+    // example: http://tributary.io/inlet/5775215
+    // ex2: https://bl.ocks.org/d3noob/bdf28027e0ce70bd132edc64f1dd7ea4
+    // ex3(!): http://bl.ocks.org/williaster/10ef968ccfdc71c30ef8
+    // ex4 (of grouped bar chart): https://bl.ocks.org/mbostock/3887051
+    // ex5 (interactive grouped bar chart): http://bl.ocks.org/jonahwilliams/2f16643b999ada7b1909
+
+    // build the array of texts for x axis
+    var education_level = ["Less than high school diploma", "High school or equivalent", "Some college, no degree",
+    "Associate's degree", "Bachelor's degree", "Master's degree", "Doctoral or professional degree"];
+
+    // define the graph size
+    var margin = 50,
+        width = 1100,
+        height = 500;
+
+    // create the svg canvas
+    var svg = d3.select("body").append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("transform", "translate(" + 20 + ",0)")
+        .append("g");
+
+    // define x
+    var x = d3.scaleBand()
+        .domain(education_level)
+        .range([margin, width - 20]);
+
+    // define y
+    var y = d3.scaleLinear()
+        .domain([100, 0])
+        .range([30, height - 70]);
+
+    // define color of the bars
+    var z = d3.scaleOrdinal()
+        .range(["#d1f2a5", "#effab4", "#ffc48c", "#ff9f80", "#BEDCE4", "#f9c7e2", "#be7052"]);
+
+    // add axises
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(0," + (height - 70) + ")")
+        .call(d3.axisBottom(x));
+
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(" + margin + ",0)")
+        .call(d3.axisLeft(y));
+
+    // add labels
+    // for x axis
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("y", 470)
+        .attr("x", (1100/2))
+        .style("text_anchor", "middle")
+        .text("Degree types");
+
+    // for y axis
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("y", 20)
+        .attr("x", (100 / 2))
+        .style("text-anchor", "middle")
+        .text("Percentage %");
+
+
+    function renderVis(_subset) {
+
+    // load the data file
+    d3.csv("data3.csv", function (error, data) {
+        var edu_map = {};
+        data.forEach(function(d) {
+            var occupation = d.title;
+            edu_map[occupation] = [];
+
+            education_level.forEach(function(field) {
+                edu_map[occupation].push( +d[field]);
+            });
+        });
+
+        if (error) throw error;
+        var data_subset = data.filter(function(d) { return (d.code === _subset); });
+
+        // format the data for dropdown bar
+        var nest = d3.nest()
+            .key(function(d) {
+                return d.code;
+            })
+            .entries(data);
+
+        // create the first dropdown of major occupation type
+        var firstMenu = d3.select("#firstDropdown");
+
+        firstMenu.selectAll("select")
+            .attr("id", "firstdropdown")
+            .selectAll("option")
+            .data(nest)
+            .enter()
+            .append("option")
+            .attr("value", function(d) {
+                return d.key;
+            })
+            .text(function(d) {
+                return d.key;
+            });
+
+//        firstMenu.exit().remove();
+
+
+
+//        for (i = 0; i<x.length; i++) {
+//            console.log(x[i].value);
+//              if (x[i].value !== selected_key) {
+//            x.remove(i);
+//             }
+//        }
+
+        // create the second dropdown of detailed occupation
+        var secondMenu = d3.select("#secondDropdown");
+
+        secondMenu.selectAll("select")
+            .attr("id", "seconddropdown");
+
+        document.getElementById("seconddropdown").innerHTML = "";
+
+        renderVis2(_subset);
+
+    })
+
+    }
+
+    function renderVis2 (_subset) {
+    // load the data file
+    d3.csv("data3.csv", function (error, data) {
+        var edu_map = {};
+        data.forEach(function (d) {
+            var occupation = d.title;
+            edu_map[occupation] = [];
+
+            education_level.forEach(function (field) {
+                edu_map[occupation].push(+d[field]);
+            });
+        });
+
+        if (error) throw error;
+        var data_subset = data.filter(function (d) {
+            return (d.code === _subset);
+        });
+//        console.log(data_subset);
+
+
+
+        // associate the second dropdown with the first one
+        // get the current selected value of the first dropdown
+        var selected = document.getElementById("firstdropdown");
+        var selected_key = selected.options[selected.selectedIndex].value;
+
+
+        // get the current selected value of the second dropdown
+        var selected2 = document.getElementById("seconddropdown");
+//        var selected_key2 = selected2.options[selected2.selectedIndex].value;
+//        console.log(selected_key2);
+
+        console.log("previous dropdown length: " + selected2.length);
+//        console.log(selected_key);
+
+        console.log("current value of first dropdown:" + selected_key);
+
+        // remove existing options
+//        if (selected.value !== selected_key) {
+//            for (i = 0; i<edu_map.length; i++) {
+//                selected2.remove(0);
+//            }
+//        }
+
+//        selected2.options.length() = 0;
+
+
+        console.log("remained dropdown after removing: " + selected2.length);
+
+        console.log("data subset size: " + data_subset.length);
+
+        // add new options
+        for (i = 0; i < data_subset.length; i++) {
+            // get the filtered value to create options
+            var option = document.createElement("option");
+
+            if (data_subset[i]["code"] === selected_key) {
+                option.text = data_subset[i]["title"];
+                selected2.add(option, selected2[i]);
+            }
+
+        }
+
+        var selected_key2 = selected2.options[selected2.selectedIndex].value;
+        console.log("current value of second dropdown:" + selected_key2);
+
+//        console.log(Object.keys(edu_map));
+//        console.log(Object.values(edu_map));
+
+        for (i = 0; i < edu_map.length; i++) {
+            console.log(Object.keys(edu_map[i]));
+        }
+
+//        for (var key in edu_map) {
+//            if (key === selected_key2) {
+//                for (i = 0; i < edu_map[key].length; i++) {
+//                    console.log(education_level[i]);
+//                    console.log(edu_map[key][i]);
+//                    edu_map[key][i] = {key: education_level[i], value: edu_map[key][i]}
+//                    console.log(edu_map[key][i])
+//                }
+//            }
+//        }
+
+        // draw the bars
+        var bars = svg.selectAll(".bar")
+            .remove()
+            .exit()
+            .data(data);
+
+        bars.enter().append("rect")
+            .attr("class", "bar")
+            .attr("transform", "translate(0," + (-margin +50) + ")")
+            .attr("x", function(d,i) { return x(education_level[i]); })  // the center x where the bar is placed
+            .attr("y", function(d,i) {  // the center y where the bar is placed
+                    for (var key in edu_map) {
+                        if (key === selected_key2) {
+                            return y(edu_map[key][i]);
+                        }
+                    }
+            })
+            .transition().duration(500)
+            .attr("width", x.bandwidth() - 5)  // the width of the bar being displayed
+            .attr("height", function(d,i) {  // the height of the bar being displayed
+                for (var key in edu_map) {
+                    if (key === selected_key2) {
+                        return height - y(edu_map[key][i]) - 70;
+                    }
+                }
+            })
+            .attr("fill", function(d,i) { return z(education_level[i])})
+//            .on("mouseover", function(){
+//                document.getElementById("details").innerHTML = this.__data__.A_MEAN_2016;
+//            });
+
+        // add the labels
+        var label = svg.selectAll(".text-label")
+            .remove()
+            .exit()
+            .data(data);
+
+        label.enter().append("text")
+            .attr("class", "text-label")
+//            .transition().duration(500)
+            .attr("transform", "translate(" + (margin+20) + "," + (-margin+50) + ")")
+            .attr("fill", "red")
+            .style("font-size", "13px")
+            .attr("x", function(d,i) { return x(education_level[i]); })
+            .attr("y", function(d,i) {
+                for (var key in edu_map) {
+                    if (key === selected_key2) {
+                        return y(edu_map[key][i]);
+                    }
+                }
+            })
+            .attr("dy", "-1em")
+            .attr("text-anchor", "middle")
+            .text(function(d,i) {
+                for (var key in edu_map) {
+                    if (key === selected_key2) {
+                        return edu_map[key][i];
+                    }
+                }
+            });
+
+
+    })
+
+    }
+
+    renderVis("Total, all occupations");
+
+
+</script>
+
+<div style="position: absolute"><h5>*Data for some occupations is shared with other occupations; see
+    https://www.bls.gov/emp/classifications-crosswalks/NEM_OccCode_ACS_Crosswalk.xlsx for details</h5></div>
+</body>

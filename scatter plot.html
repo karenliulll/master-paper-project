@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+    <title>Salary scatter plot</title>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<style>
+    /* style information for navigation bar */
+    .navi-flex-container ul{
+        flex-wrap:wrap;
+        list-style:none;
+        display:flex;
+        height:0.8em;
+        justify-content: center;
+        position: relative;
+    }
+
+    li {
+        display:inline;
+        align-items: center;
+    }
+
+    li a {
+        font-family:Baskerville, "Palatino Linotype", Palatino, "Century Schoolbook L", "Times New Roman", "serif";
+        background-color:gainsboro;
+        display:block;
+        text-align:center;
+        padding:0.5em;
+        color:darkred;
+        text-decoration:none;
+        width:12em;
+    }
+    .ul w3-bar{
+        font-family:Baskerville, "Palatino Linotype", Palatino, "Century Schoolbook L", "Times New Roman", "serif";
+        background-color:gainsboro;
+        display:block;
+        text-align:center;
+        padding:0.5em;
+        color:darkred;
+        text-decoration:none;
+    }
+
+    /* Style information for axis lines and tick marks */
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+
+    .axis text {
+        font-family: sans-serif;
+        font-size: 11px;
+    }
+
+    div {
+        color: orangered;
+    }
+
+    /* style of the title */
+    h2 {
+        font-family: "Adobe Gothic Std";
+        text-align: center;
+        color: darkred;
+        font-size: 1.7em;
+        height: 0.8em;
+    }
+
+    h5 {
+        color: slategray;
+    }
+
+    .note {
+        position: relative;
+        top: -100px;
+        left: 50px;
+    }
+
+</style>
+
+<body>
+
+<nav class="navi-flex-container">
+    <ul class="w3-bar">
+        <li><a href="pie chart 2.html" class="w3-bar-item w3-button w3-hide-small">General pie chart</a></li>
+        <li><a href="scatter plot.html" class="w3-bar-item w3-button w3-hide-small">
+            Salary scatter plot</a></li>
+        <li><a href="histogram.html" class="w3-bar-item w3-button w3-hide-small">Education level histogram</a></li>
+        <li><a href="list of occupations.html" class="w3-bar-item w3-button w3-hide-small">List of occupations</a></li>
+
+    </ul>
+</nav>
+
+<h2>Salary of detailed occupations</h2>
+    <!--
+    Select control to set the major occupation types to be visualized.  Note that the JavaScript
+    callback named "renderVis(...)"" is triggered each time the value for this select
+    control changes.
+    -->
+    <p style="position: relative; left:5%">Select a major occupation type:
+        <select onchange="renderVis(this.options[this.selectedIndex].value);">
+            <option value="All">All</option>
+            <option value="Management occupations">Management occupations</option>
+            <option value="Business and financial operations occupations">Business and financial operations occupations</option>
+            <option value="Computer and mathematical occupations">Computer and mathematical occupations</option>
+            <option value="Architecture and engineering occupations">Architecture and engineering occupations</option>
+            <option value="Life physical and social science occupations">Life physical and social science occupations</option>
+            <option value="Community and social service occupations">Community and social service occupations</option>
+            <option value="Legal occupations">Legal occupations</option>
+            <option value="Education training and library occupations">Education training and library occupations</option>
+            <option value="Arts design entertainment sports and media occupations">Arts design entertainment sports and media occupations</option>
+            <option value="Healthcare practitioners and technical occupations">Healthcare practitioners and technical occupations</option>
+            <option value="Healthcare support occupations">Healthcare support occupations</option>
+            <option value="Protective service occupations">Protective service occupations</option>
+            <option value="Food preparation and serving related occupations">Food preparation and serving related occupations</option>
+            <option value="Building and grounds cleaning and maintenance occupations">Building and grounds cleaning and maintenance occupations</option>
+            <option value="Personal care and service occupations">Personal care and service occupations</option>
+            <option value="Sales and related occupations">Sales and related occupationss</option>
+            <option value="Office and administrative support occupations">Office and administrative support occupations</option>
+            <option value="Farming fishing and forestry occupations">Farming fishing and forestry occupations</option>
+            <option value="Construction and extraction occupations">Construction and extraction occupations</option>
+            <option value="Installation maintenance and repair occupations">Installation maintenance and repair occupations</option>
+            <option value="Production occupations">Production occupations</option>
+            <option value="Transportation and material moving occupations">Transportation and material moving occupations</option>
+        </select>
+    </p>
+    <!--<p>Select a year:-->
+        <!--<select onchange="renderVis2(this.options[this.selectedIndex].value);">-->
+            <!--<option value="2016">2016</option>-->
+            <!--<option value="2015">2015</option>-->
+            <!--<option value="2014">2014</option>-->
+            <!--<option value="2013">2013</option>-->
+            <!--<option value="2012">2012</option>-->
+        <!--</select>-->
+    <!--</p>-->
+    <div style="position: absolute; left:45%; top:20%; font-family: Chalkboard;">
+        Move the mouse to the dots and see what happens! <br> (each color represents one general occupation type)</div>
+    <svg width="800" height="800"></svg>
+
+    <!--
+    This span is used to show "details on demand" when a circle in the scatterplot is moused over.
+    -->
+    <span id="details" style="position: absolute; left:45%; top:28%; font-family:'Nanum Gothic';"></span><br/>
+    <span id="details2" style="position: absolute; left:45%; top:34%; font-family:'Nanum Gothic';">&nbsp;</span><br/>
+    <span id="details3" style="position: absolute; left:45%; top:40%; font-family:'Nanum Gothic';">&nbsp;</span><br/>
+    <span id="details4" style="position: absolute; left:45%; top:46%; font-family:'Nanum Gothic';"></span><br/>
+    <span id="names" style="position: absolute; left:50%; top:48%; font-family:'Nanum Gothic';"></span>
+
+<script>
+    // define the size of canvas
+    var height = 500;
+    var width = 800;
+    var margin = 50;
+    var colour = d3.scaleOrdinal(d3.schemeCategory20c);
+
+    // create the SVG canvas
+    var svg = d3.select("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("transform", "translate(" + 50 + ",0)");
+
+    // zoom in the x and y axis
+//        .call(d3.behavior.zoom().on("zoom", function () {
+//            svg.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+//        }));
+//        .call(d3.zoom().on("zoom", function () {
+//            svg.attr("transform", d3.event.transform)
+//        }));
+
+    // define the x and y axis
+    var y = d3.scaleLinear()
+        .domain([20000, 260000])
+        .range([height-70, 40]);
+
+    var x = d3.scaleLinear()
+        .domain([0,60])  // only 3 of the 820 detailed occupations got over 40%
+        // (Farmworkers and Laborers, Crop, Nursery, and Greenhouse -- 59; Lawyers -- 57.6;
+        // Janitors and Cleaners, Except Maids and Housekeeping Cleaners -- 48.84)
+        .range([margin, width-40]);
+
+//    var x_axis = d3.axisBottom()
+//        .scale(x);
+//
+//    var y_axis = d3.axisLeft()
+//        .scale(y);
+
+    // add axises
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(0," + (500-70) +")")
+//        .call(x_axis);
+        .call(d3.axisBottom(x));
+
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(" + margin + ",0)")
+//        .call(y_axis);
+        .call(d3.axisLeft(y));
+
+    // add labels
+    // for x axis
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("y", 470)
+        .attr("x",0 + (800 / 2))
+        .style("text-anchor", "middle")
+        .text("% of Total Employment (in this major occupation type)");
+
+    // for y axis
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("y", 20)
+        .attr("x",0 + (200 / 2))
+        .style("text-anchor", "middle")
+        .text("Mean Annual Wage (US $)");
+
+
+    function renderVis(_subset) {
+
+    //function for major types
+    this.major_type = "Management occupations";
+    this.year = "2016";
+
+        var data;
+        // load the data file
+        d3.csv("data2-1.csv", function (error, data1) {
+            if (error) throw error;
+            data = data1;
+            console.log(data1);
+
+        // filter the data by occupation code
+        var data_subset = data;
+        if (_subset !== "All") {
+            data_subset = data.filter(function(d) { return (d.OCC_CODE === _subset); });
+        }
+
+//        y.domain([0, d3.max(data_subset, function(d) { return d.A_MEAN_2016; })]);
+//        x.domain([0, d3.max(data_subset, function(d) { return d.perc_2016; })]);
+//
+//        svg.select("x")
+//            .transition()
+//            .call(x_axis);
+//
+//        svg.select("y")
+//            .transition()
+//            .call(y_axis);
+
+//        for (var i = 0; i < data_subset.length; i++) {
+//            document.getElementById("names").innerHTML = this._data_.OCC_TITLE;
+//        }
+
+        // render the scatter plot
+        var circles = svg.selectAll("circle").data(data_subset, function (d) { return d.OCC_CODE; });
+
+        // scale x and y axis
+//        x.domain([d3.min(data_subset, function(d) { return d.perc_2016}), d3.max(data_subset, function(d) { return d.perc_2016})]);
+//        y.domain([d3.min(data_subset, function(d) { return d.A_MEAN_2016}), d3.max(data_subset, function(d) { return d.A_MEAN_2016})]);
+//
+        console.log(d3.max(data_subset, function(d) { return d.A_MEAN_2016}));
+//        console.log(data_subset, function(d) { return d.A_MEAN_2016})
+
+        circles.exit()
+            .transition()
+            .duration(250)
+            .attr("r", 0)
+            .remove();
+
+        circles.enter().append("circle")
+            .attr("r", 0)
+            .attr("cy", function(d) { return y(parseInt(d.A_MEAN_2016)); })
+            .attr("cx", function(d) { return x(d.perc_2016); })
+//            .attr("transform", "translate(0," + 80 +")")
+            .attr("fill", function (d) { return colour(d.OCC_CODE); })
+//            .style("fill", "Lightblue")
+            .on("mouseover", function() {
+                // print out the description texts
+                document.getElementById("details").innerHTML = "▶︎Detailed occupation type: " + this.__data__.OCC_TITLE;
+                document.getElementById("details2").innerHTML = "▶︎mean annual wage (in 2016, 2015, 2014): $"
+                    + this.__data__.A_MEAN_2016 + ", " + this.__data__.A_MEAN_2015 + ", " + this.__data__.A_MEAN_2014;
+                document.getElementById("details3").innerHTML = "▶︎Major occupation type: " + this.__data__.OCC_CODE;
+                document.getElementById("details4").innerHTML = "▶︎% of total employment in this major type: "
+                    + this.__data__.perc_2016 + "%";
+
+                // draw a line chart
+            })
+
+            // Animate the radius to have the circles slowly grow to full size.
+            .transition()
+            .duration(750)
+            .attr("r", 5)
+            // Finally, go back to the enter selection (the circles to which we just added a transition) to
+            // add the detailed job type for mouse hovers.
+            .selection().append("svg:title")
+            .text(function(d) { return d.OCC_TITLE; })
+
+            // draw the line chart of salary trend? show by clicking on the dots
+//            .on("click", function(d) {
+//
+//            })
+
+        })
+    }
+
+    // set default as the first type of jobs -- "Management occupations"
+    renderVis("All");
+
+</script>
+
+<div class="note">
+<h5>*Mean annual salary of those following occupations is not applicable: actors, dancers, musicians and singers,
+entertainers and performers, sports and related workers</h5></div>
+</body>
